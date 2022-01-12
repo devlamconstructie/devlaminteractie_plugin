@@ -1,0 +1,67 @@
+/*utilities*/
+.flex-column-centered{
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+.flex-justified-center{
+    justify-content: center;
+}
+.flex-justified-spaced{
+    justify-content: space-between;
+}
+
+#mobmenu__bg{
+    position: fixed;
+    background-color: white;
+    z-index: 9999999;
+    width: 100vw;
+    min-height: 100vw;
+    left: 0;
+    top: 110%;
+    opacity: 1;
+    transition: 300ms all;
+}
+
+.framed-image__hook > .framed-image{ 
+position: relative;
+inset: 0;
+width: 100%;
+height: 100%;
+margin: 0;
+}
+
+.image--framed img, .framed-image img{
+object-fit: cover;
+object-position: 50% 50%;
+}
+
+figcaption{
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.framed-image figcaption {
+  color: #eee;
+  z-index: 20;
+  position: relative;
+  padding: 4px 1em;
+  transform: rotate(2deg);
+  bottom: 10%;
+  margin: 1em auto;
+}
+
+.framed-image__hook{
+position: relative;
+display: block;
+content: '';
+height: auto;
+}
+
+
+.framed-image__frame{
+position: absolute;
+inset: 0;
+}
+  
+  
