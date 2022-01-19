@@ -39,10 +39,12 @@ function dvi_enqueue_scripts(){
 	wp_enqueue_script( 'workly','https://cdn.jsdelivr.net/gh/pshihn/workly/dist/workly.min.js');
     wp_enqueue_script('rough', "https://cdn.jsdelivr.net/npm/roughjs@4.5.2/bundled/rough.min.js", array() , '4.5.2');
 	
-
-    wp_enqueue_script('devlaminteractie',  DVI_PLUGINFOLDER_URL . "devlaminteractie.js" , array('rough', 'workly' ));
+	advanced_enqueue_script('dvi-svg-resize',  DVI_PLUGINFOLDER_URL . "assets/js/svg-resize.js", 'autoversion' );
+    wp_enqueue_script('devlaminteractie',  DVI_PLUGINFOLDER_URL . "devlaminteractie.js" , array('rough', 'workly', 'dvi-svg-resize' ));
+	
 	wp_enqueue_script('dvi-common',  DVI_PLUGINFOLDER_URL . "assets/js/common.js" , array('devlaminteractie' ,'rough', 'workly' ), true);
-    wp_enqueue_style('dvi_styles', DVI_PLUGINFOLDER_URL . 'devlaminteractie.css', [], '326');
+
+	wp_enqueue_style('dvi_styles', DVI_PLUGINFOLDER_URL . 'devlaminteractie.css', [], '326');
 
 	wp_dequeue_style('swcfpc_sweetalert_css');
 	//wp_dequeue_script( 'jquery' );

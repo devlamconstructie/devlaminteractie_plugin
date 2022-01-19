@@ -7,34 +7,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
     write_default_states_css(roughwrappers)
 });
 
-window.addEventListener("orientationchange", () =>  on_resize())
-
-window.addEventListener('resize', debounce( on_resize, 50))
-
 window.addEventListener('load', e => {
     decorate_menuitem_hoverstates()
     decorate_hoverstates_by_classname('__textbutton')
     frameImages();
 })
 
+window.addEventListener("orientationchange", () =>  on_resize());
+
+window.addEventListener('resize', debounce( on_resize, 50));
+
 async function decorate_menuitem_hoverstates(){
-    const options = { fill: '#f5bcbd', fillStyle: 'zigzag', hachureAngle: 50, hachureGap: 7, roughness: 3.5 }
+   const options = { fill: '#f5bcbd', fillStyle: 'zigzag', hachureAngle: 50, hachureGap: 7, roughness: 3.5 }
    decorate_hoverstates_by_classname('menu-item', options);
-   
-   /*
-    const menu_items = Array.from(document.querySelectorAll('.menu-item'))
-    let sNode = getStyleNode()
-    for (let i = 0; i < menu_items.length; i++ ){
-        const canvas = await draw_rectangular_canvas(menu_items[i], options);
-        update_css_rule(`#${menu_items[i].id}::before`,`content:'${menu_items[i].textContent}';`,sNode)
-        const url = await createBgimageCSS(canvas, `#${menu_items[i].id}::before`, sNode) 
-    }
-    */
 }
 
 async function decorate_hoverstates_by_classname(className, options){
-    options = options || { fill: '#f5bcbd', fillStyle: 'zigzag', hachureAngle: -50, hachureGap: 7, roughness: 3.5 }
-    //const cssrule = "min-width: inherit; padding: inherit; background-repeat: no-repeat; opacity: 0; position: absolute; left: 0; top: 0; z-index: 5; width: 100%; height: 100%; transition: .3s; pointer-events: none;"
+    //insert required css for this thing to work.
     const cssrule = [
         {property: 'min-width', value: 'inherit'},
         {property: 'padding', value: 'inherit'}, 
@@ -49,41 +38,28 @@ async function decorate_hoverstates_by_classname(className, options){
         {property: 'height', value: '100%'}, 
         {property: 'transition', value: '.3s'}, 
         {property: 'pointer-events', value: 'none'}
-    ]   
-    if(className.charAt(0) != '.') className = '.'+className
-    const els = Array.from(document.querySelectorAll(className))
+    ] 
+    update_css_rule2(`.${className}::before`, cssrule);
 
+    if(className.charAt(0) != '.') className = '.'+className
+    className = ( className.charAt(0) == '.' )? className : '.' + className;
+    
+
+    options = options || { fill: '#f5bcbd', fillStyle: 'zigzag', hachureAngle: -50, hachureGap: 7, roughness: 3.5 }
+
+    const els = Array.from(document.querySelectorAll(className))
     for (let i = 0; i < els.length; i++ ){
         let id = els[i].id;
-        if(!id || typeof id != 'string') {
-            console.log('no id found for element with html: \n' + els[i].outerHTML)
-            continue;
-        }
-        let canvas = await draw_rectangular_canvas(els[i], options);
-        update_css_rule2(
-            `#${id}::before`, 
-            cssrule.concat([{property: 'content', value: `'${els[i].textContent}'`}])
-        )
-        update_css_rule2(`#${id}:hover::before`,{property: 'opacity', value: '1'})
-        await createBgimageCSS(canvas, `#${id}::before`) 
+        if(!id || typeof id != 'string') els.id = id = className + '_' + i;
+        try {
+            update_css_rule2(`#${id}::before`, {property: 'content', value: `'${els[i].textContent}'`} )
+            update_css_rule2(`#${id}:hover::before`,{property: 'opacity', value: '1'})
+            let canvas = await draw_rectangular_canvas(els[i], options);
+            await createBgimageCSS(canvas, `#${id}::before`) 
+        } catch (error) {
+            console.log(error)
+        } 
     }
-}
-
-async function mask_images(){
-    images = Array.from(document.getQuerySelectorAll('.roughimage'))
-    for(let i=0; i< images.length ; i++){
-        let img = images[i];
-        let dims = getElementDimensions(img)
-        let opts = {fill: "black", fillStyle: "zigzag", fillWeight: 15, roughness: 25, hachureGap: 50, hachureAngle: 45, stroke: none};
-        let mask = await draw_rectangular_canvas(img,dims.width, dims.height, opts)
-        let src = img.src
-        let maskctx = mask.getContext('2d')
-        let buffer = document.createElement('img')
-
-
-        let imgctx = img.getContext('2d')
-    }
-
 }
 
 function write_background_css_for_className(className =''){
@@ -97,10 +73,14 @@ function write_background_css_for_className(className =''){
 async function write_default_states_css(elements = []){
     let styleNode = getStyleNode()
     for (const el of elements){
-        const options = await get_rough_options(el)
-        const canvas = await draw_rectangular_canvas(el, options);
-        const selector = (!el.id || typeof el.id == 'undefined') ? create_nthchild_selector('.' + el.classList[0]) : '#' + el.id;
-        const url = await createBgimageCSS(canvas, selector , styleNode) 
+        try {
+            const options = await get_rough_options(el)
+            const canvas = await draw_rectangular_canvas(el, options);
+            const selector = (!el.id || typeof el.id == 'undefined') ? create_nthchild_selector('.' + el.classList[0]) : '#' + el.id;
+            const url = await createBgimageCSS(canvas, selector) 
+        } catch (error) {
+            console.log(error)     
+        }
     }
 }
 
@@ -117,11 +97,15 @@ function getStyleNode(){
     return sN
 }
 
-async function get_rough_options(el) {
-  
+function get_rough_options(el) {
+    
     if(typeof el.dataset.options != "undefined" && el.dataset.options){
-        options = await string_to_object(el.dataset.options);
-        return options
+        try{
+            options = string_to_object(el.dataset.options);
+            return options
+        } catch(e){
+            console.log(e);
+        }
     };
 
     //check for presets
@@ -132,48 +116,34 @@ async function get_rough_options(el) {
     })
 
     if(Array.isArray(pn)) pn = pn.join();
- 
-    switch (pn) {
-        case 'preset_outline_only':
-            options = { roughness: 4, bowing:2, strokeWidth: 1.5, stroke: '#333'};
-            break;
-        case 'preset_thinner_whitefill':
-        case 'preset_darkbg_whitestroke':    
-                options = { fillStyle: 'solid', fill: '#222', roughness: 4, bowing:2, strokeWidth: 1.5, stroke: '#eee'};
-                break;    
-        case 'preset_thin_outline':
-            options = { roughness:2, bowing:0.9, strokeWidth: 0.5, stroke: '#333'};
-            break;    
-        case 'preset_thick_lightblue':
-            options = { fill: 'lightblue', fillStyle: 'zigzag', hachureAngle: 60, hachureGap: 4, roughness: 3 };
-            break;
-        case 'preset_header_scratch':
-            options = { fill: 'rgba(141, 30, 227, 0.1)', fillStyle: 'zigzag', fillWeight: 2, hachureAngle: 135, hachureGap: 16, roughness: 5, stroke: 'none' };
-            break;    
-        case 'preset_menu-item':
-            options = { fill: 'lightgreen', fillStyle: 'zigzag', hachureAngle: 60, hachureGap: 8, roughness: 2.5 };
-            break;
-        case 'preset_textbutton':
-            options = { fill: 'lightblue', fillStyle: 'cross-hatch', hachureAngle: 40, hachureGap: 3, roughness: 2};
-            break;
-        case 'preset_lightpurple_thincross':
-            options = { fill: 'rgba(190, 2, 238, 0.3)', fillStyle: 'cross-hatch', hachureAngle: 33, hachureGap: 3, roughness: 3};
-            break;
-        case 'preset_portfolio_item':
-                options = { roughness: 4, bowing:2, strokeWidth: 1.5, stroke: '#338'};
-                break;
-        case 'preset_page_heading':
-                options = { fill: 'red', fillStyle: 'zigzag', hachureAngle: 60, hachureGap: 8, roughness: 4 };
-                break;         
-        default:
-            options = {
-                fill: 'none',
-                fillStyle: 'zigzag',
-                hachureGap: 8,
-                roughness: 5
-            }
+    
+    let presets = get_rough_presets(); //returns a map with presets.
+    return  presets.get(pn);
+}
+
+function get_rough_presets(nwp){
+    if(typeof get_rough_presets.presets == 'undefined' ){
+        get_rough_presets.presets = new Map([
+            ['preset_outline_only',         { roughness: 4, bowing:2, strokeWidth: 1.5, stroke: '#333'}],
+            ['preset_thinner_whitefill',    { fillStyle: 'solid', fill: '#222', roughness: 4, bowing:2, strokeWidth: 1.5, stroke: '#eee'}],
+            ['preset_darkbg_whitestroke',   { fillStyle: 'solid', fill: '#222', roughness: 4, bowing:2, strokeWidth: 1.5, stroke: '#eee'}],
+            ['preset_thin_outline',         { roughness:2, bowing:0.9, strokeWidth: 0.5, stroke: '#333'}],
+            ['preset_thick_lightblue',      { fill: 'lightblue', fillStyle: 'zigzag', hachureAngle: 60, hachureGap: 4, roughness: 3 }],
+            ['preset_header_scratch',       { fill: 'rgba(141, 30, 227, 0.1)', fillStyle: 'zigzag', fillWeight: 2, hachureAngle: 135, hachureGap: 16, roughness: 5, stroke: 'none' }],
+            ['preset_menu-item',            { fill: 'lightgreen', fillStyle: 'zigzag', hachureAngle: 60, hachureGap: 8, roughness: 2.5 }],
+            ['preset_textbutton',           { fill: 'lightblue', fillStyle: 'cross-hatch', hachureAngle: 40, hachureGap: 3, roughness: 2}],
+            ['preset_lightpurple_thincross', { fill: 'rgba(190, 2, 238, 0.3)', fillStyle: 'cross-hatch', hachureAngle: 33, hachureGap: 3, roughness: 3}],
+            ['preset_portfolio_item',       { fillStyle: 'zigzag', stroke: 'none', fillWeight: 16, fill: 'rgba(229, 188, 255, 0.4)', hachureGap: 30, roughness: 10, bowing:2}],
+            ['preset_page_heading',         { fill: 'red', fillStyle: 'zigzag', hachureAngle: 60, hachureGap: 8, roughness: 4 }],      
+            ['none',                        {fill: 'none', fillStyle: 'zigzag', hachureGap: 8, roughness: 5}]
+        ]);  
     }
-    return options;
+    if(nwp){
+        let key, settings
+        [key, settings] = nwp; 
+        get_rough_presets.presets.set(key, settings)
+    }
+    return get_rough_presets.presets; 
 }
 
 function on_resize(){
@@ -224,19 +194,20 @@ async function draw_circular_background(el, options){
    	let radius = 0.5 * dims.width;
    	const rc = rough.canvas(vc);
 	await rc.circle( radius, radius, 0.9 * dims.width, options); // x, y, width, height, options
-    //workerSetCanvasToBGimg = workly.proxy(setCanvasToBGimg)
-    //workerSetCanvasToBGimg(el, vc);
     await setCanvasToBGimg(el, vc);
 }
 
 async function draw_svg_path(el, options){
-  		const rc = rough.svg(el, {async: true});
-        svgpath = el.querySelector("path");
-        svgpath.style.fill = 'none';
-        options = options || {roughness: 0.5, strokeWidth: 0.25, simplification: 0.9, fill: 'grey'}; 
+    const svg = el.querySelector('svg') || el
+    options = options || {roughness: 0.5, strokeWidth: 0.25, simplification: 0.9, fill: 'grey'}; 
+    const rc = rough.svg(svg, {async: true});
+    const svgpaths = svg.querySelectorAll("path");
+    for (const svgpath of svgpaths) {
+        svgpath.style.fill = 'none';   
         let node = await rc.path(svgpath.getAttribute("d"), options ); // x, y, width, height
         svgpath.remove();
-        el.append(node);
+        svg.append(node);
+    }
 }
 
 async function draw_multiple_svg_paths(el, options){
@@ -244,12 +215,10 @@ async function draw_multiple_svg_paths(el, options){
   options = options || {roughness: 0.5, strokeWidth: 0.25, simplification: 0.9, fill: 'grey'}; 
   svgpaths = el.querySelectorAll("path");
   for(p of svgpaths){
-      console.log(p)
-      p.style.fill = 'none';
+    p.style.fill = 'none';
     let node = await rc.path(p.getAttribute("d"), options ); // x, y, width, height
     p.remove();
-    el.append(node);
-
+    el.append(node);  
   }
 }
 
@@ -274,10 +243,12 @@ async function setCanvasToBGimg(el, cvobj){
                 //let url = URL.createObjectURL(blob);
                 let url = blobToUrl(blob)
                 el.style.backgroundImage = 'url(' + url  + ')';
-            }   
+            }  else {
+                throw 'failed to create a blob for element with id ' + el.id;
+            }  
         }, 'image/png', 0.90)      
     } catch (error) {
-        console.log(blob);        
+        console.log(error);        
     }
 }
 
@@ -289,10 +260,12 @@ async function setHoverStateBGImage(el, cvobj){
                 el.style.transition = '0.3s'
                 el.addEventListener('mouseenter', () => el.style.backgroundImage = `url(${blobToUrl(blob)})` )
                 el.addEventListener('mouseleave', () => el.style.backgroundImage = oldUrl )
-            }   
+            } else {
+                throw 'failed to create a blob for element with id ' + el.id;
+            }  
         }, 'image/png', 0.90)      
     } catch (error) {
-        console.log(blob);        
+        console.log(error);        
     }
 }
 
@@ -316,50 +289,17 @@ function create_nthchild_selector(selector){
 }
 
 function createBgimageCSS(cvobj, sel){
-    try {
-        cvobj.toBlob(async blob => {
-            if(blob){  
-               const url = await blobToUrl(blob)        
-               //update_css_rule(sel, `background-image: url('${url}');`, styleNode) 
-               update_css_rule2(sel, {property: 'background-image', value: `url(${url})`}) 
-            }   
-        }, 'image/png', 0.90)      
-    } catch (error) {
-        console.log(blob);        
-    }  
+
+    cvobj.toBlob(async blob => {
+        if(blob){  
+            const url = await blobToUrl(blob)        
+            //update_css_rule(sel, `background-image: url('${url}');`, styleNode) 
+            update_css_rule2(sel, {property: 'background-image', value: `url(${url})`}) 
+        } 
+    }, 'image/png', 0.90) 
 }
 
-function update_css_rule(sel='', rule='', styleNode){
-    const static = update_css_rule
-    if(typeof static.declarations == 'undefined'){
-        static.declarations = new Array();
-    }  
-    if(sel && !rule){
-        let foundSelector =  findBySelector(static.declarations, sel )
-        if(foundSelector){
-            console.log('existing declaration ' + sel)
-            return (foundSelector)
-        }
-   }
-
-   if (sel && rule ){
-        let foundSelector =  findBySelector(static.declarations, sel )
-        if(foundSelector){
-           if(!foundSelector.style) foundSelector.style = ''
-           foundSelector.style += rule + ' '
-        } else {          
-            static.declarations.push({selector: sel, style: rule + ' '})
-        }       
-    } 
-
-    styleNode.textContent = '' 
-    for(declaration of static.declarations){
-        styleNode.textContent +=  `\n${declaration.selector}{${declaration.style}}\n`
-    }
-    
- }
-
- function update_css_rule2(sel='', newRule=null){
+function update_css_rule2(sel='', newRule=null){
     const styleNode =  getStyleNode() 
     const fn = update_css_rule2
     if(typeof fn.rules == 'undefined'){
@@ -413,7 +353,7 @@ function update_css_rule(sel='', rule='', styleNode){
     }  
 
     styleNode.textContent = '' 
-    for(rule of fn.rules){
+    for(let rule of fn.rules){
         let css = '' 
         rule.style.forEach(stdec => {
             css += `${stdec.property}:${stdec.value};` 
@@ -424,7 +364,7 @@ function update_css_rule(sel='', rule='', styleNode){
  }
 
 function searchRulesForSelector(rules, selector){
-    for (var i = 0; i < rules.length; i++) {
+    for (let i = 0; i < rules.length; i++) {
         if (rules[i].selector === selector) {
           return i;
         }
@@ -441,14 +381,14 @@ function searchRulesForSelector(rules, selector){
     return false
   }
 
-function assemble_css(){
-    const styles = update_css_rule()
-    let css = '' 
-    for(declaration of styles){
-        css +=  `\n${declaration.selector}{${declaration.style}}\n`
-    }
-    return css
-}
+// function assemble_css(){
+//     const styles = update_css_rule()
+//     let css = '' 
+//     for(declaration of styles){
+//         css +=  `\n${declaration.selector}{${declaration.style}}\n`
+//     }
+//     return css
+// }
 
 function getElementDimensions(el){
     let width, height;
@@ -516,8 +456,8 @@ function createVirtualCanvas(el, width= 0, height=0){
 
 /* check if object is empty. Returns true if it is.*/ 
 function isObjectEmpty(obj){
-    if(typeof(obj) != "object")
-        return typeof(obj);
+    if(typeof obj != "object")
+        return typeof obj;
 
     return (Object.keys(obj).length === 0 && obj.constructor === Object)
 }
@@ -528,25 +468,20 @@ function isObjectEmpty(obj){
 ** number values may be integers or floats with period decimal separator.
 */
 function string_to_object(str) {
-    if (!typeof(str) == 'string') {
-        console.log("no string passed")
-        return;
-    }
-    let error_log = 'failed to convert string:\n' + str + '\nallowed characters: - _ . '
-
+    if (typeof str != 'string') return;
+ 
     //we need to recast the data-options string into a format that we can convert into a js object
     //first we surround text with literal double quotation marks and remove them again for simple integer values
     str = str.replace(/([\w\-\.]+)\s?:\s?([\w\-\.]+)/g, "\"$1\":\"$2\"").replace(/\"(\d+[\.]?\d*)\"/g, "$1");
     //add braces if not present
     if (!/[{}]/.test(str))
         str = "{" + str + "}";
-    //now we can attempt to convert the string into an object	
+    //now we can attempt to convert the string into an object	    
     let obj = JSON.parse(str);
 
     //check if something went wrong
-    if (typeof(obj) != 'object') {
-        console.log(error_log)
-        return
+    if (typeof obj != 'object') {
+        throw `failed to convert string:\n' ${str} '\nallowed characters: - _ . `
     }
 
     return obj;
@@ -600,24 +535,24 @@ class imageFrame{
     }
     
     makeFrame(){
-      const pic = this.pic
-      const cv = document.createElement('canvas')
-      cv.classList.add('framed-image__frame')
-      const picdims = this.getPicdims(pic);
-      cv.width = picdims.w;
-      cv.height = picdims.h;
-      const pad = Math.max(2, 0.005 * picdims.w)
-      const thick = Math.min(32, 0.04 * picdims.w)
-      console.log(thick, pad)
-      let sw = picdims.w - pad
-      let sh = picdims.h - pad
+        const pic = this.pic
+        const cv = document.createElement('canvas')
+        cv.classList.add('framed-image__frame')
+        const picdims = this.getPicdims(pic);
+        cv.width = picdims.w;
+        cv.height = picdims.h;
+        const pad = Math.max(2, 0.005 * picdims.w)
+        const thick = Math.min(32, 0.04 * picdims.w)
+        console.log(thick, pad)
+        let sw = picdims.w - pad
+        let sh = picdims.h - pad
   
-    let path = `m${pad} ${pad} H ${sw} V ${sh} H ${pad}z m${pad + thick } ${pad+thick} H ${sw - thick } V ${sh - thick } H ${pad+thick}z` 
-     
-    const roughCv = rough.canvas(cv)
-  roughCv.path(path, {fill: 'none', fillStyle: 'solid', stroke: 'none', bowing: 2})
-  roughCv.path(path, {fill: this.color, fillStyle: 'zigzag', fillWeight: 2, hachureGap: 10, stroke: this.color, bowing: 2, roughness: 2, disableMultiStrokeFill: true})
-      return cv;
+        let path = `m${pad} ${pad} H ${sw} V ${sh} H ${pad}z m${pad + thick } ${pad+thick} H ${sw - thick } V ${sh - thick } H ${pad+thick}z` 
+
+        const roughCv = rough.canvas(cv)
+        roughCv.path(path, {fill: 'none', fillStyle: 'solid', stroke: 'none', bowing: 2})
+        roughCv.path(path, {fill: this.color, fillStyle: 'zigzag', fillWeight: 2, hachureGap: 10, stroke: this.color, bowing: 2, roughness: 2, disableMultiStrokeFill: true})
+        return cv;
      }
     
     framePic(){

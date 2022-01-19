@@ -56,8 +56,20 @@ position: relative;
 display: block;
 content: '';
 height: auto;
+transform: rotate(1.5deg)
 }
 
+.wp-block-column:nth-child(n+1) .framed-image__hook {
+    transform: rotate(-0.8deg);
+}
+
+.wp-block-column:nth-child(n+2) .framed-image__hook {
+    transform: rotate(2deg);
+}
+
+.wp-block-column:nth-child(n+3) .framed-image__hook {
+    transform: rotate(-1deg);
+}
 
 .framed-image__frame{
 position: absolute;
