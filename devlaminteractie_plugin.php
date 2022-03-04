@@ -11,6 +11,8 @@
 if(! defined('WPINC'))
     wp_die();
 
+include 'assets/includes/dvi_gravityforms.php';
+include 'assets/includes/view.php';
 /** 
  * compose the url for the folder containing this plugin. 
  */
@@ -32,6 +34,8 @@ if ( ! defined( 'DVI_PLUGINFOLDER_PATH' ) ) {
 	);
 }
 
+
+
 add_action( 'wp_enqueue_scripts', 'dvi_enqueue_scripts', 11 );
 
 function dvi_enqueue_scripts(){ 
@@ -40,8 +44,8 @@ function dvi_enqueue_scripts(){
     wp_enqueue_script('rough', "https://cdn.jsdelivr.net/npm/roughjs@4.5.2/bundled/rough.min.js", array() , '4.5.2');
 	
 	advanced_enqueue_script('dvi-svg-resize',  DVI_PLUGINFOLDER_URL . "assets/js/svg-resize.js", 'autoversion' );
-    wp_enqueue_script('devlaminteractie',  DVI_PLUGINFOLDER_URL . "devlaminteractie.js" , array('rough', 'workly', 'dvi-svg-resize' ));
-	
+    //wp_enqueue_script('devlaminteractie',  DVI_PLUGINFOLDER_URL . "devlaminteractie.js" , array('rough', 'workly'));
+	wp_enqueue_script('devlaminteractie',  DVI_PLUGINFOLDER_URL . "assets/js/devlaminteractie.min.js" , array('rough', 'workly'));
 	wp_enqueue_script('dvi-common',  DVI_PLUGINFOLDER_URL . "assets/js/common.js" , array('devlaminteractie' ,'rough', 'workly' ), true);
 
 	wp_enqueue_style('dvi_styles', DVI_PLUGINFOLDER_URL . 'devlaminteractie.css', [], '326');
@@ -402,69 +406,7 @@ function class_by_longest_word($phrase, $prefix = '', $affixes = array()){
 }
 
 
-/**
- * Filters the next, previous and submit buttons.
- * Replaces the forms <input> buttons with <button> while maintaining attributes from original <input>.
- *
- * @param string $button Contains the <input> tag to be filtered.
- * @param object $form Contains all the properties of the current form.
- *
- * @return string The filtered button.
- */
-add_filter(
-	'gform_next_button', 
-	function ($button, $form ){
-		return dvi_form_button($button, $form, 'icon-step-forward', 'form__nextbtn-textspan');
-	}, 10, 2 
-);
 
-
-add_filter( 
-	'gform_previous_button', 
-	function ($button, $form ){
-		return dvi_form_button($button, $form, 'icon-step-backward', 'form__prevbtn-textspan');
-	}, 10, 2 
-);
-
-add_filter( 
-	'gform_submit_button', 
-	function ($button, $form ){
-		return dvi_form_button($button, $form, 'icon-play', 'form__submitbtn-textspan');
-	}, 10, 2 
-);
-
-function dvi_form_button($button, $form, $iconclass='', $spanclass=''){
-    $dom = new DOMDocument();
-    $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $button );
-  
-    $new_button = $dom->createElement( 'button' );
-	
-	$icontag = $dom->createElement('i');
-    $icontag->setAttribute('class', $iconclass);
-	$new_button->appendChild($icontag);
-	
-	$btnTextSpan = $dom->createElement('span');
-    $btnTextSpan->setAttribute('class', $spanclass);
-	$btnTextSpan->appendChild($icontag);
-	
-	$input = $dom->getElementsByTagName( 'input' )->item(0);
-	
-	$btnTextSpan->appendChild( $dom->createTextNode( $input->getAttribute( 'value' ) ) );   
-    
-	$new_button->appendChild($btnTextSpan); 
-	
-	$input->removeAttribute( 'value' );
-	
-	foreach( $input->attributes as $attribute ) {
-        $new_button->setAttribute( $attribute->name, $attribute->value );
-    }
-	
-    $input->parentNode->replaceChild( $new_button, $input );
- 
-    return $dom->saveHtml( $new_button );
-}
-
-add_filter( 'gform_confirmation_anchor_2', '__return_false' );
 
 /*create custom Walker because the default wp menu is not great.*/
 class Div_Walker_Nav_Menu extends Walker {
